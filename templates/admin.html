@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理后台 - 医务人员准入考试系统</title>
+<link rel="stylesheet" href="/static/css/app.css">
+<style>
+/* ========== Admin Layout ========== */
+.admin-body { background: transparent; }
+.admin-container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.admin-header h1 { font-size: 22px; font-weight: 700; }
+.admin-header .nav-link { font-size: 14px; color: var(--primary); text-decoration: none; }
+
+/* Stats Cards */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+.stat-card { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 16px; text-align: center; }
+.stat-card .stat-value { font-size: 28px; font-weight: 700; color: var(--primary); }
+.stat-card .stat-label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+.stat-card.pass .stat-value { color: var(--success); }
+.stat-card.fail .stat-value { color: var(--danger); }
+.stat-card.avg .stat-value { color: #fa8c16; }
+
+/* Filters */
+.filter-bar { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px 20px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filter-group label { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+.filter-group input, .filter-group select { padding: 8px 10px; font-size: 14px; border: 1px solid var(--border); border-radius: 6px; outline: none; min-width: 120px; }
+.filter-group input:focus, .filter-group select:focus { border-color: var(--primary); }
+.filter-actions { display: flex; gap: 8px; }
+.btn-sm { padding: 8px 16px; font-size: 14px; min-height: 36px; }
+.btn-export { background: var(--success); color: #fff; text-decoration: none; display: inline-flex; align-items: center; }
+
+/* Table */
+.table-wrapper { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { background: #fafafa; font-weight: 600; color: var(--text-secondary); font-size: 13px; }
+tr:hover { background: #fafafa; }
+tr:last-child td { border-bottom: none; }
+.status-badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 500; }
+.status-pass { background: var(--success-bg); color: var(--success); }
+.status-fail { background: var(--danger-bg); color: var(--danger); }
+.clickable-row { cursor: pointer; }
+
+/* Pagination */
+.pagination { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 16px; }
+.page-btn { padding: 6px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); cursor: pointer; font-size: 14px; }
+.page-btn:hover { border-color: var(--primary); color: var(--primary); }
+.page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.page-btn:disabled { opacity: 0.4; cursor: default; }
+.page-info { font-size: 14px; color: var(--text-secondary); }
+
+/* Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+.modal-overlay.show { display: flex; }
+.modal { background: var(--card-bg); border-radius: var(--radius); max-width: 700px; width: 100%; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--card-bg); z-index: 1; }
+.modal-header h2 { font-size: 18px; font-weight: 600; }
+.modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-light); padding: 0 4px; }
+.modal-body { padding: 20px; }
+.modal-info { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.modal-info-item { font-size: 14px; }
+.modal-info-item .label { color: var(--text-secondary); }
+.modal-info-item .value { font-weight: 500; }
+
+/* Answer Detail in Modal */
+.answer-detail { margin-bottom: 10px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.answer-detail.correct { background: var(--success-bg); }
+.answer-detail.wrong { background: var(--danger-bg); }
+.answer-detail .q-title { font-weight: 500; margin-bottom: 4px; }
+.answer-detail .q-detail { color: var(--text-secondary); font-size: 13px; }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 48px 20px; color: var(--text-light); }
+
+@media (max-width: 768px) {
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .filter-bar { flex-direction: column; }
+  .filter-group input, .filter-group select { min-width: auto; width: 100%; }
+  .filter-actions { width: 100%; }
+  .filter-actions .btn { flex: 1; }
+  .admin-container { padding: 16px 12px; }
+}
+</style>
+</head>
+<body class="admin-body">
+<div class="admin-container">
+  <div class="admin-tabs">
+    <div class="admin-tab active" data-tab="records">考核记录</div>
+    <div class="admin-tab" data-tab="roles">角色管理</div>
+  </div>
+  <div class="admin-header">
+    <a href="/" class="nav-link">&larr; 返回考试</a>
+  </div>
+
+  <!-- ===== Records View ===== -->
+  <div id="recordsView">
+
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card"><div class="stat-value" id="statTotal">-</div><div class="stat-label">考试总人次</div></div>
+    <div class="stat-card pass"><div class="stat-value" id="statPass">-</div><div class="stat-label">合格人数</div></div>
+    <div class="stat-card fail"><div class="stat-value" id="statFail">-</div><div class="stat-label">不合格人数</div></div>
+    <div class="stat-card avg"><div class="stat-value" id="statAvg">-</div><div class="stat-label">平均正确率(%)</div></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>姓名</label>
+      <input type="text" id="filterName" placeholder="姓名" />
+    </div>
+    <div class="filter-group">
+      <label>科室</label>
+      <input type="text" id="filterDepartment" placeholder="科室" />
+    </div>
+    <div class="filter-group">
+      <label>结果</label>
+      <select id="filterStatus"><option value="">全部</option><option value="pass">合格</option><option value="fail">不合格</option></select>
+    </div>
+    <div class="filter-group">
+      <label>开始日期</label>
+      <input type="date" id="filterDateFrom" />
+    </div>
+    <div class="filter-group">
+      <label>结束日期</label>
+      <input type="date" id="filterDateTo" />
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-primary btn-sm" id="btnSearch">查询</button>
+      <a class="btn btn-sm btn-export" id="btnExport" href="/api/records/export" target="_blank">导出 Excel</a>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>序号</th>
+          <th>姓名</th>
+          <th>科室</th>
+          <th>得分</th>
+          <th>正确率</th>
+          <th>结果</th>
+          <th>考试时间</th>
+        </tr>
+      </thead>
+      <tbody id="recordsBody">
+        <tr><td colspan="7" class="empty-state">加载中...</td></tr>
+      </tbody>
+    </table>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>答题详情</h2>
+      <button class="modal-close" id="modalClose">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody">
+      <div class="modal-info" id="modalInfo"></div>
+      <div id="modalAnswers"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Roles View ===== -->
+<div id="rolesView" style="display:none;">
+  <div class="role-mgmt-card">
+    <div class="role-mgmt-header">
+      <h3>角色列表</h3>
+      <button class="btn btn-primary btn-sm" onclick="showRoleEditor()">+ 添加角色</button>
+    </div>
+    <div id="roleList"></div>
+  </div>
+
+  <!-- Role Editor Modal (also used for adding) -->
+  <div class="modal-overlay" id="roleEditorModal">
+    <div class="modal" style="max-width:500px;">
+      <div class="modal-header">
+        <h2 id="roleEditorTitle">编辑角色</h2>
+        <button class="modal-close" onclick="closeRoleEditor()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>角色名称</label>
+          <input type="text" id="roleEditorName" placeholder="如：医生、护士、药师" />
+        </div>
+        <div class="form-group">
+          <label>描述</label>
+          <input type="text" id="roleEditorDesc" placeholder="角色说明（可选）" />
+        </div>
+        <div style="font-size:14px;font-weight:500;margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--border);">章节配置（0 表示全部抽取）</div>
+        <div id="chapterConfigs"></div>
+        <div class="config-actions">
+          <button class="btn btn-primary btn-sm" onclick="saveRole()">保存</button>
+          <button class="btn btn-secondary btn-sm" onclick="closeRoleEditor()">取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/questions.js"></script>
+<script src="/static/js/utils.js"></script>
+<script src="/static/js/admin.js"></script>
+<script>
+/* ========== Admin Tab Switching ========== */
+var currentAdminTab = 'records';
+
+function switchAdminTab(tab) {
+  currentAdminTab = tab;
+  document.querySelectorAll('.admin-tab').forEach(function (el) {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+  document.getElementById('recordsView').style.display = tab === 'records' ? '' : 'none';
+  document.getElementById('rolesView').style.display = tab === 'roles' ? '' : 'none';
+  if (tab === 'roles') loadRoles();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.admin-tab').forEach(function (el) {
+    el.addEventListener('click', function () { switchAdminTab(this.dataset.tab); });
+  });
+  document.getElementById('roleEditorModal').addEventListener('click', function (e) {
+    if (e.target === this) closeRoleEditor();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeRoleEditor();
+  });
+});
+
+/* ========== Role Management ========== */
+var editingRoleId = null;
+var CHAPTER_DATA = [];
+
+function loadRoles() {
+  var list = document.getElementById('roleList');
+  list.innerHTML = '<div class="empty-state">加载中...</div>';
+  fetch('/api/roles').then(function (r) { return r.json(); }).then(function (res) {
+    if (res.code !== 0) { list.innerHTML = '<div class="empty-state">加载失败</div>'; return; }
+    renderRoles(res.data);
+  }).catch(function () { list.innerHTML = '<div class="empty-state">网络错误</div>'; });
+}
+
+function renderRoles(roles) {
+  var list = document.getElementById('roleList');
+  if (!roles || roles.length === 0) {
+    list.innerHTML = '<div class="empty-state">暂无角色，请添加</div>';
+    return;
+  }
+  list.innerHTML = roles.map(function (r) {
+    var chapters = r.configs || [];
+    var configSummary = chapters.map(function (c) { return '第' + c.chapterId + '章(' + (c.questionCount || '全') + '题)'; }).join(' ');
+    return '<div class="role-list-item">' +
+      '<div class="rli-left">' +
+      '<div class="rli-name">' + escapeHtml(r.name) + '</div>' +
+      '<div class="rli-desc">' + (r.description ? escapeHtml(r.description) : '') + ' ' + (configSummary ? '<span style="color:var(--text-light)">' + configSummary + '</span>' : '') + '</div>' +
+      '</div>' +
+      '<div class="rli-actions">' +
+      '<button class="btn-icon" onclick="editRole(' + r.id + ')">编辑</button>' +
+      '<button class="btn-icon danger" onclick="deleteRole(' + r.id + ')">删除</button>' +
+      '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function showRoleEditor() {
+  editingRoleId = null;
+  document.getElementById('roleEditorTitle').textContent = '添加角色';
+  document.getElementById('roleEditorName').value = '';
+  document.getElementById('roleEditorDesc').value = '';
+  // Load chapters from questions
+  loadChapterConfigs([]);
+  document.getElementById('roleEditorModal').classList.add('show');
+}
+
+function editRole(roleId) {
+  editingRoleId = roleId;
+  document.getElementById('roleEditorTitle').textContent = '编辑角色';
+  fetch('/api/roles').then(function (r) { return r.json(); }).then(function (res) {
+    if (res.code !== 0) return;
+    var role = res.data.find(function (r) { return r.id === roleId; });
+    if (!role) return;
+    document.getElementById('roleEditorName').value = role.name;
+    document.getElementById('roleEditorDesc').value = role.description || '';
+    loadChapterConfigs(role.configs || []);
+    document.getElementById('roleEditorModal').classList.add('show');
+  });
+}
+
+function closeRoleEditor() {
+  document.getElementById('roleEditorModal').classList.remove('show');
+  editingRoleId = null;
+}
+
+function loadChapterConfigs(existingConfigs) {
+  var container = document.getElementById('chapterConfigs');
+  // We need to know the chapters - fetch from API or use static data
+  if (CHAPTER_DATA.length === 0) {
+    fetch('/api/questions/chapters').then(function (r) { return r.json(); }).then(function (res) {
+      if (res.code === 0) {
+        CHAPTER_DATA = res.data;
+        renderChapterConfigs(existingConfigs);
+      }
+    });
+  } else {
+    renderChapterConfigs(existingConfigs);
+  }
+}
+
+function renderChapterConfigs(existingConfigs) {
+  var container = document.getElementById('chapterConfigs');
+  if (CHAPTER_DATA.length === 0) {
+    // Fallback: use 4 chapters
+    CHAPTER_DATA = [
+      { chapterId: 1, chapterTitle: '互联网+医疗健康发展政策' },
+      { chapterId: 2, chapterTitle: '医务人员管理' },
+      { chapterId: 3, chapterTitle: '互联网诊疗服务行为' },
+      { chapterId: 4, chapterTitle: '信息安全' },
+    ];
+  }
+  container.innerHTML = CHAPTER_DATA.map(function (ch) {
+    var existing = existingConfigs.find(function (c) { return c.chapterId === ch.chapterId; });
+    var count = existing ? existing.questionCount : 0;
+    return '<div class="chapter-config-row">' +
+      '<label>' + escapeHtml(ch.chapterTitle) + '</label>' +
+      '<input type="number" class="ch-qcount" data-chapter-id="' + ch.chapterId + '" value="' + count + '" min="0" max="999" />' +
+      '<span class="count-hint">0=全部</span>' +
+      '</div>';
+  }).join('');
+}
+
+function saveRole() {
+  var name = document.getElementById('roleEditorName').value.trim();
+  var desc = document.getElementById('roleEditorDesc').value.trim();
+  if (!name) { alert('请输入角色名称'); return; }
+
+  // Collect chapter configs
+  var chapters = [];
+  document.querySelectorAll('.ch-qcount').forEach(function (input) {
+    var cid = parseInt(input.dataset.chapterId);
+    var ch = CHAPTER_DATA.find(function (c) { return c.chapterId === cid; });
+    chapters.push({
+      chapterId: cid,
+      chapterTitle: ch ? ch.chapterTitle : '',
+      questionCount: parseInt(input.value) || 0,
+    });
+  });
+
+  var url, method;
+  if (editingRoleId) {
+    url = '/api/roles/' + editingRoleId;
+    method = 'PUT';
+  } else {
+    url = '/api/roles';
+    method = 'POST';
+  }
+
+  fetch(url, {
+    method: method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: name, description: desc }),
+  }).then(function (r) { return r.json(); }).then(function (res) {
+    if (res.code !== 0) { alert(res.msg); return; }
+    // Save config
+    var roleId = editingRoleId || res.data.id;
+    return fetch('/api/roles/' + roleId + '/config', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chapters: chapters }),
+    });
+  }).then(function (res) {
+    if (res && res.ok) {
+      closeRoleEditor();
+      loadRoles();
+    }
+  }).catch(function () { alert('保存失败'); });
+}
+
+function deleteRole(roleId) {
+  if (!confirm('确定要删除该角色吗？')) return;
+  fetch('/api/roles/' + roleId, { method: 'DELETE' })
+    .then(function (r) { return r.json(); })
+    .then(function (res) {
+      if (res.code === 0) loadRoles();
+      else alert(res.msg);
+    }).catch(function () { alert('删除失败'); });
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+</script>
+</body>
+</html>
