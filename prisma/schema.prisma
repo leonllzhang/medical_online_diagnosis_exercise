@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(cuid())
+  name       String
+  phone      String   @unique
+  department String
+  roleId     String?
+  role       Role?    @relation(fields: [roleId], references: [id])
+  isAdmin    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  sessions ExamSession[]
+  records  ExamRecord[]
+}
+
+model Chapter {
+  id          Int         @id
+  title       String
+  description String?
+  questions   Question[]
+  roleConfigs RoleConfig[]
+}
+
+model Question {
+  id        Int      @id @default(autoincrement())
+  chapterId Int
+  chapter   Chapter  @relation(fields: [chapterId], references: [id])
+  type      String   @default("single")
+  stem      String
+  options   Json
+  answer    String[]
+  createdAt DateTime @default(now())
+}
+
+model Role {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  configs RoleConfig[]
+  users   User[]
+}
+
+model RoleConfig {
+  id            String  @id @default(cuid())
+  roleId        String
+  role          Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  chapterId     Int
+  chapter       Chapter @relation(fields: [chapterId], references: [id])
+  questionCount Int     @default(0)
+
+  @@unique([roleId, chapterId])
+}
+
+model ExamSession {
+  id            String   @id @default(cuid())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
+  roleId        String?
+  roleName      String?
+  status        String   @default("in_progress")
+  currentIndex  Int      @default(0)
+  score         Int      @default(0)
+  total         Int      @default(0)
+  percentage    Float    @default(0)
+  statusResult  String?
+
+  questionsJson String   @default("[]")
+  answersJson   String   @default("[]")
+
+  startedAt     DateTime @default(now())
+  finishedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  record ExamRecord?
+}
+
+model ExamRecord {
+  id          String   @id @default(cuid())
+  sessionId   String   @unique
+  session     ExamSession @relation(fields: [sessionId], references: [id])
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  name        String
+  department  String
+  roleName    String?
+  score       Int      @default(0)
+  total       Int      @default(0)
+  percentage  Float    @default(0)
+  status      String?
+  detailsJson String   @default("[]")
+  finishedAt  DateTime?
+  createdAt   DateTime @default(now())
+}

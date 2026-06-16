@@ -5,3 +5,5 @@ export_temp.xlsx
 .env
 .venv/
 venv/
+node_modules/
+.next/
