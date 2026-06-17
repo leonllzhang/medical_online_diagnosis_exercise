@@ -48,9 +48,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     setInitialized(true);
   }, []);
 
-  const login = useCallback(async (phone: string, name?: string): Promise<{ success: boolean; isAdmin?: boolean }> => {
+  const login = useCallback(async (phone: string, name: string, department: string): Promise<{ success: boolean; isAdmin?: boolean }> => {
     try {
-      const res = await apiPost("/api/auth/login", { phone, name }, null);
+      const res = await apiPost("/api/auth/login", { phone, name, department }, null);
       if (res.code === 0 && res.data) {
         const { token: newToken, user: userData } = res.data;
         localStorage.setItem("token", newToken);

@@ -74,7 +74,27 @@ async function main() {
     console.log(`Created role: ${name}`);
   }
 
-  // 4. Create default admin user
+  // 4. Create Departments
+  const departmentNames = [
+    "瘢痕与创面治疗科", "颅颌面整形科", "面颈整形科", "会阴整形与性别重塑科",
+    "乳腺综合整形科", "外耳整形再造科", "血管瘤与脉管畸形整形科", "综合整形科",
+    "脂肪整形科", "创伤修复与组织再生科", "皮肤科", "口腔医学美容中心",
+    "激光美容中心", "注射美容中心", "毛发移植中心", "数字化技术中心",
+    "肥胖与代谢病中心", "神经内科", "内科", "眼科", "耳鼻咽喉科", "营养科",
+    "麻醉科", "放射科", "肾内科", "骨科", "基本外科", "急诊医学中心",
+    "神经外科", "瘢痕微创治疗中心", "鼻整形再造科", "乳房整形科",
+    "唇腭裂整形科", "儿科", "医务处",
+  ];
+  for (const name of departmentNames) {
+    await prisma.department.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+  }
+  console.log(`Created ${departmentNames.length} departments`);
+
+  // 5. Create default admin user
   const adminPhone = "admin";
   const existingAdmin = await prisma.user.findUnique({
     where: { phone: adminPhone },
@@ -84,7 +104,7 @@ async function main() {
       data: {
         name: "管理员",
         phone: adminPhone,
-        department: "管理部",
+        department: "医务处",
         isAdmin: true,
       },
     });

@@ -50,7 +50,7 @@ export default function AdminRolesPage() {
       chapterId: parseInt(chapterId),
       questionCount: count,
     }));
-    await apiPut(`/api/roles/${editingRole}/config`, configArray, token);
+    await apiPut(`/api/roles/${editingRole}/config`, { chapters: configArray }, token);
     setEditingRole(null);
     fetchRoles();
   };

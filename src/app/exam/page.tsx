@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, apiGet } from "@/hooks/useAuth";
-import { useStartExam } from "@/hooks/useExam";
+import { useStartExam, useCancelExam } from "@/hooks/useExam";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Role } from "@/types/user";
@@ -14,7 +14,11 @@ export default function ExamPage() {
   const router = useRouter();
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState("");
+  const [resumeSessionId, setResumeSessionId] = useState<string | null>(null);
   const startExam = useStartExam(token);
+  const cancelExam = useCancelExam(token);
+  const [showResumeDialog, setShowResumeDialog] = useState(false);
+  const pendingStartRef = useRef(false);
 
   useEffect(() => {
     apiGet("/api/roles", token).then((res) => {
@@ -22,7 +26,6 @@ export default function ExamPage() {
     });
   }, [token]);
 
-  // Pre-select user's role
   useEffect(() => {
     if (user?.roleId && roles.length > 0) {
       setSelectedRole(user.roleId);
@@ -30,14 +33,46 @@ export default function ExamPage() {
   }, [user, roles]);
 
   const handleStart = async () => {
-    if (!selectedRole) return;
+    if (!selectedRole || pendingStartRef.current) return;
+    pendingStartRef.current = true;
     try {
       const data = await startExam.mutateAsync();
-      router.push(`/exam/start?sessionId=${data.sessionId}`);
+      if (data.resume) {
+        setResumeSessionId(data.sessionId);
+        setShowResumeDialog(true);
+      } else {
+        router.push(`/exam/start?sessionId=${data.sessionId}`);
+      }
     } catch {
       // Error handled by mutation
+    } finally {
+      pendingStartRef.current = false;
     }
   };
+
+  const handleResume = () => {
+    setShowResumeDialog(false);
+    if (resumeSessionId) {
+      router.push(`/exam/start?sessionId=${resumeSessionId}`);
+    }
+  };
+
+  const handleRestart = async () => {
+    setShowResumeDialog(false);
+    if (resumeSessionId) {
+      await cancelExam.mutateAsync(resumeSessionId);
+      // Re-start to create new session
+      pendingStartRef.current = true;
+      try {
+        const data = await startExam.mutateAsync();
+        router.push(`/exam/start?sessionId=${data.sessionId}`);
+      } finally {
+        pendingStartRef.current = false;
+      }
+    }
+  };
+
+  const isPending = startExam.isPending || cancelExam.isPending;
 
   return (
     <AppShell>
@@ -81,10 +116,10 @@ export default function ExamPage() {
             <Button
               className="w-full"
               size="lg"
-              disabled={!selectedRole || startExam.isPending}
+              disabled={!selectedRole || isPending}
               onClick={handleStart}
             >
-              {startExam.isPending ? "准备中..." : "开始考试"}
+              {isPending ? "处理中..." : "开始考试"}
             </Button>
 
             <p className="text-xs text-muted-foreground text-center">
@@ -93,6 +128,30 @@ export default function ExamPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Resume dialog */}
+      {showResumeDialog && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
+          <Card className="w-full max-w-sm">
+            <CardContent className="p-6 space-y-4">
+              <div className="text-center">
+                <div className="text-lg font-medium mb-2">检测到未完成的考试</div>
+                <p className="text-sm text-muted-foreground">
+                  是否继续上次答题，还是重新开始？
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1" onClick={handleRestart} disabled={isPending}>
+                  重新开始
+                </Button>
+                <Button className="flex-1" onClick={handleResume}>
+                  继续答题
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </AppShell>
   );
 }

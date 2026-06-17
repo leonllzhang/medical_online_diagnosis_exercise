@@ -12,6 +12,7 @@ const sidebarItems = [
   { href: "/admin/roles", label: "角色规则", icon: "⚙️" },
   { href: "/admin/questions", label: "题库浏览", icon: "📝" },
   { href: "/admin/records", label: "考核记录", icon: "📋" },
+  { href: "/admin/departments", label: "科室管理", icon: "🏥" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

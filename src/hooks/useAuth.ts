@@ -6,7 +6,7 @@ import { User } from "@/types/user";
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (phone: string, name?: string) => Promise<{ success: boolean; isAdmin?: boolean }>;
+  login: (phone: string, name: string, department: string) => Promise<{ success: boolean; isAdmin?: boolean }>;
   register: (data: {
     name: string;
     phone: string;

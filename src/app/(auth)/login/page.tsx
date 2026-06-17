@@ -7,13 +7,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { DepartmentSelect } from "@/components/shared/DepartmentSelect";
 
 export default function LoginPage() {
+  const { token, login } = useAuth();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [department, setDepartment] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,10 +28,14 @@ export default function LoginPage() {
       setError("请输入手机号");
       return;
     }
+    if (!department) {
+      setError("请选择科室");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
-      const result = await login(phone.trim(), name.trim());
+      const result = await login(phone.trim(), name.trim(), department);
       if (result.success) {
         router.replace(result.isAdmin ? "/admin/dashboard" : "/exam");
       } else {
@@ -78,6 +84,15 @@ export default function LoginPage() {
                 onChange={(e) => setPhone(e.target.value)}
                 maxLength={11}
                 className="h-12 text-base"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">科室</label>
+              <DepartmentSelect
+                token={token}
+                value={department}
+                onChange={setDepartment}
+                placeholder="请选择或搜索科室"
               />
             </div>
             {error && (

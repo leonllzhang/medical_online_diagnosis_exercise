@@ -5,6 +5,7 @@ export interface ExamSessionData {
   questions: QuestionForExam[];
   answers: AnswerState[];
   roleName?: string | null;
+  resume?: boolean;
 }
 
 export interface QuestionForExam {

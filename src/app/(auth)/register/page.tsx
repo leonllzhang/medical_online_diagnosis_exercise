@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Role } from "@/types/user";
+import { DepartmentSelect } from "@/components/shared/DepartmentSelect";
 
 export default function RegisterPage() {
+  const { token } = useAuth();
   const [form, setForm] = useState({ name: "", phone: "", department: "", roleId: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -87,10 +89,11 @@ export default function RegisterPage() {
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">科室 *</label>
-              <Input
-                placeholder="请输入科室名称"
+              <DepartmentSelect
+                token={token}
                 value={form.department}
-                onChange={(e) => setForm({ ...form, department: e.target.value })}
+                onChange={(v) => setForm({ ...form, department: v })}
+                placeholder="请选择或搜索科室"
               />
             </div>
             <div>

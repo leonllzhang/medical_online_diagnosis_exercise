@@ -7,16 +7,7 @@ export async function GET() {
       orderBy: { id: "asc" },
     });
 
-    // Strip answers for exam-mode listing
-    const safe = questions.map((q) => ({
-      id: q.id,
-      chapterId: q.chapterId,
-      type: q.type,
-      stem: q.stem,
-      options: q.options,
-    }));
-
-    return NextResponse.json({ code: 0, data: safe });
+    return NextResponse.json({ code: 0, data: questions });
   } catch (error) {
     console.error("Questions error:", error);
     return NextResponse.json(

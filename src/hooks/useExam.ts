@@ -89,6 +89,20 @@ export function useFinishExam(token: string | null) {
   });
 }
 
+export function useCancelExam(token: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (sessionId: string) => {
+      const res = await apiPost(`/api/sessions/${sessionId}/cancel`, {}, token);
+      if (res.code !== 0) throw new Error(res.msg || "取消失败");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["session"] });
+    },
+  });
+}
+
 export function useResult(token: string | null, sessionId: string | null) {
   return useQuery({
     queryKey: ["result", sessionId],

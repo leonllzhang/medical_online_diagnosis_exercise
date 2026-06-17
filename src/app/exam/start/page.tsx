@@ -149,7 +149,7 @@ function QuestionPalette({
   };
 
   return (
-    <div className="grid grid-cols-5 gap-2">
+    <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
       {answers.map((a, i) => {
         const correct = isCorrect(i);
         return (

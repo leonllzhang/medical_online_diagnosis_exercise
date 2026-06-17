@@ -4,7 +4,7 @@ import { createToken } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, phone } = await request.json();
+    const { name, phone, department } = await request.json();
 
     if (!phone) {
       return NextResponse.json(
@@ -15,6 +15,12 @@ export async function POST(request: NextRequest) {
     if (!name) {
       return NextResponse.json(
         { code: 1, msg: "请输入姓名" },
+        { status: 400 }
+      );
+    }
+    if (!department) {
+      return NextResponse.json(
+        { code: 1, msg: "请选择科室" },
         { status: 400 }
       );
     }
@@ -34,6 +40,13 @@ export async function POST(request: NextRequest) {
     if (user.name !== name) {
       return NextResponse.json(
         { code: 1, msg: "姓名与手机号不匹配" },
+        { status: 400 }
+      );
+    }
+
+    if (user.department !== department) {
+      return NextResponse.json(
+        { code: 1, msg: "科室信息不匹配" },
         { status: 400 }
       );
     }

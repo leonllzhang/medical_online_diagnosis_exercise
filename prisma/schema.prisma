@@ -22,6 +22,11 @@ model User {
   records  ExamRecord[]
 }
 
+model Department {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+}
+
 model Chapter {
   id          Int         @id
   title       String
