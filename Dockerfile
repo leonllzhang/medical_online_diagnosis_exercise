@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
 
 # Copy dependency files
@@ -15,7 +15,7 @@ COPY public ./public
 RUN npx prisma generate
 RUN npm run build
 
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -35,14 +35,13 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Install prisma CLI + tsx globally for entrypoint scripts
-RUN npm install -g prisma tsx
+# Install OpenSSL (required by Prisma engine) and prisma CLI + tsx
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+RUN npm install -g prisma@5 tsx
 
 # Copy entrypoint
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
-USER nextjs
 
 EXPOSE 3000
 

@@ -2,7 +2,7 @@
 set -e
 
 echo "Running database schema sync..."
-npx prisma db push --accept-data-loss
+npx prisma db push --accept-data-loss --skip-generate
 
 echo "Seeding database..."
 npx tsx prisma/seed.ts || echo "Seed may have already been applied"
