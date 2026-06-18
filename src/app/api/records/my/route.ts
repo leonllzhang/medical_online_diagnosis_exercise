@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
       code: 0,
       data: records.map((r) => ({
         id: r.id,
+        sessionId: r.sessionId,
         roleName: r.roleName,
         score: r.score,
         total: r.total,

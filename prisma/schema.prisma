@@ -75,6 +75,7 @@ model ExamSession {
   roleId        String?
   roleName      String?
   status        String   @default("in_progress")
+  retakeOf      String?
   currentIndex  Int      @default(0)
   score         Int      @default(0)
   total         Int      @default(0)

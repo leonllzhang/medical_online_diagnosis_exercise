@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { useResult } from "@/hooks/useExam";
+import { useResult, useRetakeExam } from "@/hooks/useExam";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppShell } from "@/components/shared/AppShell";
@@ -12,7 +12,17 @@ export default function ExamResultPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { token } = useAuth();
   const { data: result, isLoading } = useResult(token, sessionId);
+  const retakeExam = useRetakeExam(token);
   const router = useRouter();
+
+  const handleRetake = async () => {
+    try {
+      const data = await retakeExam.mutateAsync(sessionId);
+      router.push(`/exam/start?sessionId=${data.sessionId}`);
+    } catch {
+      // Error handled by mutation
+    }
+  };
 
   if (isLoading) {
     return (
@@ -82,13 +92,22 @@ export default function ExamResultPage() {
               </div>
             </div>
 
-            <div className="flex gap-3 justify-center">
+            <div className="flex gap-3 justify-center flex-wrap">
               <Button variant="outline" onClick={() => router.push("/exam")}>
                 返回首页
               </Button>
               <Button onClick={() => router.push("/exam/history")}>
                 历史记录
               </Button>
+              {result.details.some((d) => !d.correct) && (
+                <Button
+                  variant="destructive"
+                  onClick={handleRetake}
+                  disabled={retakeExam.isPending}
+                >
+                  {retakeExam.isPending ? "创建中..." : "错题重考"}
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

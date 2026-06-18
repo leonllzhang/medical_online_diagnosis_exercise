@@ -48,6 +48,7 @@ export interface QuestionDetail {
 
 export interface MyRecord {
   id: string;
+  sessionId: string;
   roleName?: string | null;
   score: number;
   total: number;

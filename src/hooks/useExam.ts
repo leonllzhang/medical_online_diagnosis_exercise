@@ -103,6 +103,25 @@ export function useCancelExam(token: string | null) {
   });
 }
 
+export function useRetakeExam(token: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (originalSessionId: string) => {
+      const res = await apiPost(
+        "/api/sessions/retake",
+        { originalSessionId },
+        token
+      );
+      if (res.code === 0) return res.data as ExamSessionData & { totalOriginal?: number; originalScore?: number; originalCorrectCount?: number };
+      throw new Error(res.msg || "创建错题重考失败");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["session"] });
+    },
+  });
+}
+
 export function useResult(token: string | null, sessionId: string | null) {
   return useQuery({
     queryKey: ["result", sessionId],

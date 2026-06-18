@@ -37,7 +37,7 @@ export default function HistoryPage() {
               <Card
                 key={r.id}
                 className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => router.push(`/exam/result/${r.id}`)}
+                onClick={() => router.push(`/exam/result/${r.sessionId}`)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">

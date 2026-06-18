@@ -149,7 +149,7 @@ function QuestionPalette({
   };
 
   return (
-    <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
+    <div className="grid grid-cols-5 gap-2">
       {answers.map((a, i) => {
         const correct = isCorrect(i);
         return (
@@ -157,7 +157,7 @@ function QuestionPalette({
             key={i}
             onClick={() => onJump(i)}
             className={cn(
-              "w-full aspect-square rounded-lg text-sm font-medium transition-colors",
+              "w-full aspect-square rounded-lg text-base font-medium transition-colors",
               i === currentIndex
                 ? "ring-2 ring-primary ring-offset-2"
                 : "",
@@ -259,7 +259,7 @@ export default function ExamStartPage() {
     setShowConfirm(false);
     try {
       const result = await finishExam.mutateAsync(sessionId);
-      router.push(`/exam/result/${sessionId}`);
+      router.push(`/exam/result/${(result as { originalSessionId?: string }).originalSessionId || sessionId}`);
     } catch {
       // Error handled by mutation
     }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
-import { calculateScore } from "@/lib/exam";
+import { calculateScore, checkAnswer } from "@/lib/exam";
 import { PASS_THRESHOLD } from "@/lib/utils";
 
 export async function POST(
@@ -50,6 +50,92 @@ export async function POST(
       where: { id: auth.userId },
     });
 
+    // For retake sessions: combine with original score
+    let finalScore = score;
+    let finalTotal = total;
+    let finalPercentage = percentage;
+    let finalStatus = statusResult;
+    let finalDetail = detail;
+
+    if (session.retakeOf) {
+      const original = await prisma.examSession.findUnique({
+        where: { id: session.retakeOf },
+      });
+      if (original) {
+        const originalQuestions = JSON.parse(original.questionsJson);
+        const originalAnswers = JSON.parse(original.answersJson);
+        const retakeQuestions = JSON.parse(session.questionsJson);
+
+        // Build questionId -> retake answer map
+        const retakeMap = new Map();
+        for (let i = 0; i < retakeQuestions.length; i++) {
+          retakeMap.set(retakeQuestions[i].id, answers[i]);
+        }
+
+        // Recalculate combined score across all original questions
+        let combinedScore = 0;
+        const combinedDetail = [];
+        const updatedOriginalAnswers = [...originalAnswers];
+        for (let i = 0; i < originalQuestions.length; i++) {
+          const q = originalQuestions[i];
+          const origAns = originalAnswers[i] || { selected: [] };
+          const retakeAns = retakeMap.get(q.id);
+          // Use retake answer if the question was retaken, otherwise keep original
+          const effectiveAns = retakeAns || origAns;
+          const correct = checkAnswer(q, effectiveAns.selected || []);
+          if (correct) combinedScore++;
+          combinedDetail.push({
+            questionId: q.id,
+            correct,
+            correctAnswer: q.answer,
+          });
+          // Merge retake answer back into original for subsequent retakes
+          if (retakeAns) {
+            updatedOriginalAnswers[i] = retakeAns;
+          }
+        }
+
+        const combinedTotal = originalQuestions.length;
+        const combinedPercentage =
+          combinedTotal > 0
+            ? Math.round((combinedScore / combinedTotal) * 1000) / 10
+            : 0;
+        const combinedStatus =
+          combinedPercentage >= PASS_THRESHOLD ? "pass" : "fail";
+
+        // Update original session score + answers (so subsequent retakes see correct state)
+        await prisma.examSession.update({
+          where: { id: session.retakeOf },
+          data: {
+            score: combinedScore,
+            total: combinedTotal,
+            percentage: combinedPercentage,
+            statusResult: combinedStatus,
+            answersJson: JSON.stringify(updatedOriginalAnswers),
+          },
+        });
+
+        // Update original exam record
+        await prisma.examRecord.update({
+          where: { sessionId: session.retakeOf },
+          data: {
+            score: combinedScore,
+            total: combinedTotal,
+            percentage: combinedPercentage,
+            status: combinedStatus,
+            detailsJson: JSON.stringify(combinedDetail),
+          },
+        });
+
+        finalScore = combinedScore;
+        finalTotal = combinedTotal;
+        finalPercentage = combinedPercentage;
+        finalStatus = combinedStatus;
+        finalDetail = combinedDetail;
+      }
+    }
+
+    // Create exam record for retake session (always)
     if (user) {
       await prisma.examRecord.create({
         data: {
@@ -58,11 +144,11 @@ export async function POST(
           name: user.name,
           department: user.department,
           roleName: session.roleName,
-          score,
-          total,
-          percentage,
-          status: statusResult,
-          detailsJson: JSON.stringify(detail),
+          score: finalScore,
+          total: finalTotal,
+          percentage: finalPercentage,
+          status: finalStatus,
+          detailsJson: JSON.stringify(finalDetail),
           finishedAt: now,
         },
       });
@@ -72,10 +158,12 @@ export async function POST(
       code: 0,
       data: {
         sessionId: params.id,
-        score,
-        total,
-        percentage,
-        status: statusResult,
+        score: finalScore,
+        total: finalTotal,
+        percentage: finalPercentage,
+        status: finalStatus,
+        isRetake: !!session.retakeOf,
+        originalSessionId: session.retakeOf || undefined,
       },
     });
   } catch (error) {
