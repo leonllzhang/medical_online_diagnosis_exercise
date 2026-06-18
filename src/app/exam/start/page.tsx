@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useSession, useSaveAnswer, useFinishExam } from "@/hooks/useExam";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { TYPE_LABELS } from "@/types/question";
 import { cn } from "@/lib/utils";
 
@@ -277,6 +277,14 @@ export default function ExamStartPage() {
   const answer = localAnswers[currentIndex] || { selected: [], revealed: false };
   const answeredCount = localAnswers.filter((a) => a.revealed).length;
   const allAnswered = localAnswers.length > 0 && localAnswers.every((a) => a.revealed);
+  const correctCount = localAnswers.filter((a, i) => {
+    if (!a.revealed) return false;
+    const q = session?.questions[i];
+    if (!q) return false;
+    if (a.selected.length !== q.answer.length) return false;
+    return a.selected.every((s) => q.answer.includes(s));
+  }).length;
+  const wrongCount = answeredCount - correctCount;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-sky-100">
@@ -355,46 +363,93 @@ export default function ExamStartPage() {
                   />
                 )}
               </CardContent>
+              <CardFooter className="border-t p-4 sm:p-6">
+                <div className="flex items-center justify-between w-full">
+                  <Button
+                    variant="outline"
+                    disabled={currentIndex === 0}
+                    onClick={() => setCurrentIndex((i) => i - 1)}
+                  >
+                    上一题
+                  </Button>
+                  <span className="text-sm text-muted-foreground hidden sm:block">
+                    {currentIndex + 1} / {session.questions.length}
+                  </span>
+                  {currentIndex < session.questions.length - 1 ? (
+                    <Button onClick={() => setCurrentIndex((i) => i + 1)}>
+                      下一题
+                    </Button>
+                  ) : (
+                    <Button
+                      variant={allAnswered ? "default" : "outline"}
+                      onClick={() => setShowConfirm(true)}
+                      disabled={finishExam.isPending}
+                    >
+                      {finishExam.isPending ? "提交中..." : "交卷"}
+                    </Button>
+                  )}
+                </div>
+              </CardFooter>
             </Card>
-
-            {/* Navigation */}
-            <div className="flex items-center justify-between mt-4">
-              <Button
-                variant="outline"
-                disabled={currentIndex === 0}
-                onClick={() => setCurrentIndex((i) => i - 1)}
-              >
-                上一题
-              </Button>
-              <span className="text-sm text-muted-foreground hidden sm:block">
-                {currentIndex + 1} / {session.questions.length}
-              </span>
-              {currentIndex < session.questions.length - 1 ? (
-                <Button onClick={() => setCurrentIndex((i) => i + 1)}>
-                  下一题
-                </Button>
-              ) : (
-                <Button
-                  variant={allAnswered ? "default" : "outline"}
-                  onClick={() => setShowConfirm(true)}
-                  disabled={finishExam.isPending}
-                >
-                  {finishExam.isPending ? "提交中..." : "交卷"}
-                </Button>
-              )}
-            </div>
           </div>
 
           {/* Desktop palette sidebar */}
-          <div className="hidden sm:block w-64 flex-shrink-0">
-            <div className="sticky top-20">
+          <div className="hidden sm:block w-72 flex-shrink-0">
+            <div className="sticky top-20 space-y-4">
+              {/* Chapter info */}
+              {question?.chapterTitle && (
+                <Card>
+                  <CardContent className="p-3">
+                    <div className="text-xs text-muted-foreground">当前章节</div>
+                    <div className="text-sm font-medium truncate">{question.chapterTitle}</div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Progress card */}
+              <Card>
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">答题进度</span>
+                    <span className="text-sm text-muted-foreground">
+                      {answeredCount}/{session.questions.length}
+                    </span>
+                  </div>
+                  <div className="w-full h-2.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all"
+                      style={{ width: `${(answeredCount / session.questions.length) * 100}%` }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-success">{correctCount}</div>
+                      <div className="text-xs text-muted-foreground">正确</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-destructive">{wrongCount}</div>
+                      <div className="text-xs text-muted-foreground">错误</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold">{answeredCount}</div>
+                      <div className="text-xs text-muted-foreground">已答</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-muted-foreground">{session.questions.length - answeredCount}</div>
+                      <div className="text-xs text-muted-foreground">未答</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Question palette */}
               <Card>
                 <CardContent className="p-4">
                   <div className="text-sm font-medium mb-3">题目列表</div>
                   <QuestionPalette answers={localAnswers} questions={session.questions} currentIndex={currentIndex} onJump={handleJump} />
                   <div className="mt-3 text-xs text-muted-foreground space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded bg-primary" /> 已答
+                      <span className="w-3 h-3 rounded bg-primary" /> 已答（未批）
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded bg-muted" /> 未答

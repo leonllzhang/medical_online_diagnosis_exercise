@@ -40,8 +40,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="hidden md:flex flex-col w-72 bg-white border-r">
         <div className="p-4 border-b">
           <Link href="/admin/dashboard" className="flex items-center gap-2">
-            <img src="/logo.png" alt="logo" className="h-7 w-7" />
-            <img src="/logo-title.png" alt="管理后台" className="h-6 max-w-[9rem] object-contain" />
+            <img src="/logo.png" alt="logo" className="h-10 w-10" />
+            <img src="/logo-title.png" alt="管理后台" className="h-8 max-w-[11rem] object-contain" />
           </Link>
         </div>
         <nav className="flex-1 p-3 space-y-1">

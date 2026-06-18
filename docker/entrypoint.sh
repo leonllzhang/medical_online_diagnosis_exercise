@@ -1,11 +1,11 @@
 #!/bin/sh
 set -e
 
-echo "Running database push (schema sync)..."
+echo "Running database schema sync..."
 npx prisma db push --accept-data-loss
 
 echo "Seeding database..."
-npx prisma db seed || echo "Seed may have already been applied"
+npx tsx prisma/seed.ts || echo "Seed may have already been applied"
 
 echo "Starting application..."
 exec "$@"
