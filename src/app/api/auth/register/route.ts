@@ -22,8 +22,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify role exists if provided
-    if (roleId) {
+    // Verify role exists if provided, otherwise default to 医生
+    let finalRoleId = roleId || null;
+    if (!finalRoleId) {
+      const doctorRole = await prisma.role.findFirst({ where: { name: "医生" } });
+      if (doctorRole) finalRoleId = doctorRole.id;
+    } else {
       const role = await prisma.role.findUnique({ where: { id: roleId } });
       if (!role) {
         return NextResponse.json(
@@ -34,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await prisma.user.create({
-      data: { name, phone, department, roleId: roleId || null },
+      data: { name, phone, department, roleId: finalRoleId },
       include: { role: true },
     });
 

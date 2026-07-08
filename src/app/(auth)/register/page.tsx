@@ -1,29 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth, apiGet } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Role } from "@/types/user";
 import { DepartmentSelect } from "@/components/shared/DepartmentSelect";
 
 export default function RegisterPage() {
   const { token } = useAuth();
-  const [form, setForm] = useState({ name: "", phone: "", department: "", roleId: "" });
+  const [form, setForm] = useState({ name: "", phone: "", department: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [roles, setRoles] = useState<Role[]>([]);
   const { register } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    apiGet("/api/roles", null).then((res) => {
-      if (res.code === 0) setRoles(res.data || []);
-    });
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +34,6 @@ export default function RegisterPage() {
         name: form.name.trim(),
         phone: form.phone.trim(),
         department: form.department.trim(),
-        roleId: form.roleId || null,
       });
       if (ok) {
         router.replace("/exam");
@@ -95,21 +86,6 @@ export default function RegisterPage() {
                 onChange={(v) => setForm({ ...form, department: v })}
                 placeholder="请选择或搜索科室"
               />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">角色</label>
-              <select
-                className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={form.roleId}
-                onChange={(e) => setForm({ ...form, roleId: e.target.value })}
-              >
-                <option value="">请选择角色</option>
-                {roles.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" size="lg" disabled={loading}>

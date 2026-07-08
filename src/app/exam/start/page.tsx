@@ -259,7 +259,7 @@ export default function ExamStartPage() {
     setShowConfirm(false);
     try {
       const result = await finishExam.mutateAsync(sessionId);
-      router.push(`/exam/result/${(result as { originalSessionId?: string }).originalSessionId || sessionId}`);
+      router.push(`/exam/result/${sessionId}`);
     } catch {
       // Error handled by mutation
     }

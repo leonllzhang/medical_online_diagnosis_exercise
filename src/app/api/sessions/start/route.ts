@@ -63,8 +63,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine role config
-    const activeRoleId = roleId || user.roleId;
+    // Determine role config — default to 医生 if none specified
+    let activeRoleId = roleId || user.roleId;
+    if (!activeRoleId) {
+      const doctorRole = await prisma.role.findFirst({ where: { name: "医生" } });
+      if (doctorRole) activeRoleId = doctorRole.id;
+    }
     let configs: { chapterId: number; questionCount: number }[] = [];
     let roleName = "";
 
