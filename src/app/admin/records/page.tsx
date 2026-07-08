@@ -21,15 +21,63 @@ export default function AdminRecordsPage() {
 
   const { data, isLoading } = useRecords(token, { ...filters, page, pageSize: 20 } as any);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     const params = new URLSearchParams();
     if (filters.name) params.set("name", filters.name);
     if (filters.department) params.set("department", filters.department);
     if (filters.status) params.set("status", filters.status);
     if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
     if (filters.dateTo) params.set("dateTo", filters.dateTo);
+    params.set("pageSize", "99999");
 
-    window.open(`/api/records/export?${params.toString()}`, "_blank");
+    try {
+      const res = await fetch(`/api/records?${params.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        alert("获取记录失败");
+        return;
+      }
+      const json = await res.json();
+      if (json.code !== 0) {
+        alert(json.msg || "获取记录失败");
+        return;
+      }
+
+      const records = json.data.records as any[];
+      if (records.length === 0) {
+        alert("没有可导出的记录");
+        return;
+      }
+
+      const XLSX = await import("xlsx");
+      const rows = records.map((r: any) => ({
+        "姓名": r.name,
+        "科室": r.department,
+        "角色": r.roleName || "",
+        "得分": `${r.score}/${r.total}`,
+        "正确率": `${r.percentage}%`,
+        "结果": r.status === "pass" ? "合格" : "不合格",
+        "完成时间": r.finished_at ? new Date(r.finished_at).toLocaleString("zh-CN") : "",
+      }));
+
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(workbook, worksheet, "考核记录");
+
+      const buf = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+      const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `考核记录_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("导出失败");
+    }
   };
 
   return (

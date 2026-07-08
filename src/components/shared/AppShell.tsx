@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +14,7 @@ const navItems = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -53,7 +54,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="text-sm text-muted-foreground hidden sm:inline">
               {user?.name} {user?.department ? `| ${user.department}` : ""}
             </span>
-            <Button variant="ghost" size="sm" onClick={logout}>
+            <Button variant="ghost" size="sm" onClick={() => { logout(); router.push("/login"); }}>
               退出
             </Button>
           </div>
