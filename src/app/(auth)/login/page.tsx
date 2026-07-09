@@ -60,7 +60,7 @@ export default function LoginPage() {
             <img src="/logo-title.png" alt="医护互联" className="h-8" />
           </div>
           <CardDescription className="text-base">
-            北京市互联网诊疗医务人员准入考试
+            互联网医院线上诊疗准入考核
           </CardDescription>
         </CardHeader>
         <CardContent className="px-8 pb-8 pt-4">

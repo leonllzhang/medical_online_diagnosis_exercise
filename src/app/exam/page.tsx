@@ -66,7 +66,7 @@ export default function ExamPage() {
           <CardHeader>
             <CardTitle>准入资格考试</CardTitle>
             <CardDescription>
-              北京市互联网诊疗医务人员准入考试 — 在线练习系统
+              互联网医院线上诊疗准入考核 — 在线练习系统
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

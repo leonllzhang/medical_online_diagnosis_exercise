@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "医护互联考试考核系统",
-  description: "北京市互联网诊疗医务人员准入考试系统",
+  description: "互联网医院线上诊疗准入考核系统",
 };
 
 export const viewport: Viewport = {
