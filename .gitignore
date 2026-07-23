@@ -7,3 +7,5 @@ export_temp.xlsx
 venv/
 node_modules/
 .next/
+# Generated reference files
+题库参考资料.*
