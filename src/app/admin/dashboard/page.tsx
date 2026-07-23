@@ -25,28 +25,34 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-3xl font-bold text-primary">{stats.totalRecords}</div>
-            <div className="text-sm text-muted-foreground mt-1">考核总人次</div>
+            <div className="text-3xl font-bold text-primary">{stats.totalRegisteredUsers}</div>
+            <div className="text-sm text-muted-foreground mt-1">注册用户</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-3xl font-bold text-success">{stats.passRecords}</div>
-            <div className="text-sm text-muted-foreground mt-1">合格人数</div>
+            <div className="text-3xl font-bold text-info">{stats.totalExamUsers}</div>
+            <div className="text-sm text-muted-foreground mt-1">已考核用户</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-3xl font-bold text-destructive">{stats.failRecords}</div>
-            <div className="text-sm text-muted-foreground mt-1">不合格人数</div>
+            <div className="text-3xl font-bold text-success">{stats.passedUsers}</div>
+            <div className="text-sm text-muted-foreground mt-1">合格用户</div>
+            <div className="text-xs text-muted-foreground/60">合格率 {stats.passRate}%</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-3xl font-bold text-warning">{stats.passRate}%</div>
-            <div className="text-sm text-muted-foreground mt-1">合格率</div>
+            <div className="text-3xl font-bold text-destructive">{stats.failedUsers}</div>
+            <div className="text-sm text-muted-foreground mt-1">未合格用户</div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Total records secondary info */}
+      <div className="text-xs text-muted-foreground text-center -mt-4">
+        考核总人次 {stats.totalRecords}
       </div>
 
       {/* Department stats */}
@@ -60,6 +66,7 @@ export default function DashboardPage() {
               <thead>
                 <tr className="border-b text-muted-foreground">
                   <th className="text-left py-2 font-medium">科室</th>
+                  <th className="text-right py-2 font-medium">已考核用户</th>
                   <th className="text-right py-2 font-medium">考核人次</th>
                   <th className="text-right py-2 font-medium">平均正确率</th>
                 </tr>
@@ -68,7 +75,8 @@ export default function DashboardPage() {
                 {stats.departmentStats.map((d, i) => (
                   <tr key={i} className="border-b last:border-0">
                     <td className="py-2">{d.department}</td>
-                    <td className="text-right py-2">{d.count}</td>
+                    <td className="text-right py-2">{d.userCount}</td>
+                    <td className="text-right py-2">{d.totalRecords}</td>
                     <td className="text-right py-2">{d.avgPercentage}%</td>
                   </tr>
                 ))}

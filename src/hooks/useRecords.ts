@@ -32,11 +32,13 @@ interface RecordsResponse {
 }
 
 interface StatsResponse {
-  totalRecords: number;
-  passRecords: number;
-  failRecords: number;
+  totalRegisteredUsers: number;
+  totalExamUsers: number;
+  passedUsers: number;
+  failedUsers: number;
   passRate: number;
-  departmentStats: { department: string; count: number; avgPercentage: number }[];
+  totalRecords: number;
+  departmentStats: { department: string; userCount: number; totalRecords: number; avgPercentage: number }[];
   recentRecords: { name: string; department: string; percentage: number; status: string; finishedAt: string }[];
 }
 
