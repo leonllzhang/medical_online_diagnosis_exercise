@@ -22,30 +22,72 @@ export async function GET(request: NextRequest) {
       if (dateTo) (where.finishedAt as Record<string, unknown>).lte = new Date(dateTo + "T23:59:59");
     }
 
-    const [records, total] = await Promise.all([
-      prisma.examRecord.findMany({
-        where: where as any,
-        orderBy: { finishedAt: "desc" },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      prisma.examRecord.count({ where: where as any }),
-    ]);
+    // Get paginated user groups (name + department as compound key)
+    const groups = await prisma.examRecord.groupBy({
+      by: ["name", "department"],
+      where: where as any,
+      _count: { id: true },
+      _max: { percentage: true, finishedAt: true },
+      orderBy: { _max: { finishedAt: "desc" } },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
 
-    return NextResponse.json({
-      code: 0,
-      data: {
+    // Get total group count for pagination
+    const allGroups = await prisma.examRecord.groupBy({
+      by: ["name", "department"],
+      where: where as any,
+      _count: { id: true },
+    });
+    const total = allGroups.length;
+
+    // Fetch all records for the groups on current page
+    const wherePairs = groups.map((g) => ({
+      name: g.name,
+      department: g.department,
+    }));
+
+    const allRecords =
+      wherePairs.length > 0
+        ? await prisma.examRecord.findMany({
+            where: {
+              ...(where as any),
+              OR: wherePairs.map((p) => ({
+                name: p.name,
+                department: p.department,
+              })),
+            },
+            orderBy: [{ name: "asc" }, { finishedAt: "desc" }],
+          })
+        : [];
+
+    // Group records on server side
+    const users = groups.map((g) => {
+      const records = allRecords.filter(
+        (r) => r.name === g.name && r.department === g.department
+      );
+      return {
+        name: g.name,
+        department: g.department,
+        totalAttempts: g._count.id,
+        bestPercentage: g._max.percentage,
+        latestStatus: records[0]?.status || "",
         records: records.map((r) => ({
           id: r.id,
-          name: r.name,
-          department: r.department,
-          roleName: r.roleName,
+          sessionId: r.sessionId,
           score: r.score,
           total: r.total,
           percentage: r.percentage,
           status: r.status,
           finishedAt: r.finishedAt?.toISOString() || "",
         })),
+      };
+    });
+
+    return NextResponse.json({
+      code: 0,
+      data: {
+        users,
         total,
         page,
         pageSize,

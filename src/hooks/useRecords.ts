@@ -4,8 +4,27 @@ import { useQuery } from "@tanstack/react-query";
 import { apiGet } from "@/hooks/useAuth";
 import { MyRecord } from "@/types/exam";
 
+interface UserRecord {
+  id: string;
+  sessionId: string;
+  score: number;
+  total: number;
+  percentage: number;
+  status: string;
+  finishedAt: string;
+}
+
+interface UserGroup {
+  name: string;
+  department: string;
+  totalAttempts: number;
+  bestPercentage: number | null;
+  latestStatus: string;
+  records: UserRecord[];
+}
+
 interface RecordsResponse {
-  records: (MyRecord & { name: string; department: string })[];
+  users: UserGroup[];
   total: number;
   page: number;
   pageSize: number;
