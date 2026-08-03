@@ -29,17 +29,58 @@ export async function POST(
 
     const { score, detail } = calculateScore(questions, answers);
     const total = questions.length;
-    const percentage = total > 0 ? Math.round((score / total) * 1000) / 10 : 0;
-    const statusResult = percentage >= PASS_THRESHOLD ? "pass" : "fail";
+    let percentage = total > 0 ? Math.round((score / total) * 1000) / 10 : 0;
+    let statusResult = percentage >= PASS_THRESHOLD ? "pass" : "fail";
+    let finalScore = score;
+    let finalTotal = total;
 
     const now = new Date();
+
+    // For retake sessions: combine original correct count with retake correct count
+    // e.g. original 21/40, retake gets 8 of the 19 wrong right → 29/40 → 72.5%
+    if (session.retakeOf) {
+      const original = await prisma.examSession.findUnique({
+        where: { id: session.retakeOf },
+      });
+      if (original) {
+        const originalQuestions = JSON.parse(original.questionsJson);
+        const originalAnswers = JSON.parse(original.answersJson);
+        const originalScore = calculateScore(originalQuestions, originalAnswers).score;
+
+        finalScore = originalScore + score;
+        finalTotal = originalQuestions.length;
+        percentage = finalTotal > 0 ? Math.round((finalScore / finalTotal) * 1000) / 10 : 0;
+        statusResult = percentage >= PASS_THRESHOLD ? "pass" : "fail";
+
+        // Merge retake answers back into original session for subsequent retakes
+        const retakeMap = new Map();
+        for (let i = 0; i < questions.length; i++) {
+          retakeMap.set(questions[i].id, answers[i]);
+        }
+
+        const updatedOriginalAnswers = [...originalAnswers];
+        for (let i = 0; i < originalQuestions.length; i++) {
+          const retakeAns = retakeMap.get(originalQuestions[i].id);
+          if (retakeAns) {
+            updatedOriginalAnswers[i] = retakeAns;
+          }
+        }
+
+        await prisma.examSession.update({
+          where: { id: session.retakeOf },
+          data: {
+            answersJson: JSON.stringify(updatedOriginalAnswers),
+          },
+        });
+      }
+    }
 
     await prisma.examSession.update({
       where: { id: params.id },
       data: {
         status: "finished",
-        score,
-        total,
+        score: finalScore,
+        total: finalTotal,
         percentage,
         statusResult,
         finishedAt: now,
@@ -50,42 +91,6 @@ export async function POST(
       where: { id: auth.userId },
     });
 
-    // For retake sessions: merge retake answers back for subsequent retakes
-    if (session.retakeOf) {
-      const original = await prisma.examSession.findUnique({
-        where: { id: session.retakeOf },
-      });
-      if (original) {
-        const originalQuestions = JSON.parse(original.questionsJson);
-        const originalAnswers = JSON.parse(original.answersJson);
-        const retakeQuestions = JSON.parse(session.questionsJson);
-
-        // Build questionId -> retake answer map
-        const retakeMap = new Map();
-        for (let i = 0; i < retakeQuestions.length; i++) {
-          retakeMap.set(retakeQuestions[i].id, answers[i]);
-        }
-
-        // Merge retake answers back into original session for subsequent retakes
-        const updatedOriginalAnswers = [...originalAnswers];
-        for (let i = 0; i < originalQuestions.length; i++) {
-          const retakeAns = retakeMap.get(originalQuestions[i].id);
-          if (retakeAns) {
-            updatedOriginalAnswers[i] = retakeAns;
-          }
-        }
-
-        // Update original session answers only (for subsequent retakes to detect still-wrong questions)
-        await prisma.examSession.update({
-          where: { id: session.retakeOf },
-          data: {
-            answersJson: JSON.stringify(updatedOriginalAnswers),
-          },
-        });
-      }
-    }
-
-    // Create exam record for retake session (always)
     if (user) {
       await prisma.examRecord.create({
         data: {
@@ -94,8 +99,8 @@ export async function POST(
           name: user.name,
           department: user.department,
           roleName: session.roleName,
-          score,
-          total,
+          score: finalScore,
+          total: finalTotal,
           percentage,
           status: statusResult,
           detailsJson: JSON.stringify(detail),
@@ -108,8 +113,8 @@ export async function POST(
       code: 0,
       data: {
         sessionId: params.id,
-        score,
-        total,
+        score: finalScore,
+        total: finalTotal,
         percentage,
         status: statusResult,
         isRetake: !!session.retakeOf,
