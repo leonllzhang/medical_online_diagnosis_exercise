@@ -7,6 +7,7 @@ RUN npm ci
 
 # Copy source files
 COPY prisma ./prisma
+COPY scripts ./scripts
 COPY tsconfig.json next.config.js tailwind.config.ts postcss.config.js ./
 COPY src ./src
 COPY public ./public
@@ -33,6 +34,7 @@ COPY --from=builder /app/public ./public
 
 # Copy Prisma schema + generated client for runtime migrations
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Install OpenSSL (required by Prisma engine) and prisma CLI + tsx
