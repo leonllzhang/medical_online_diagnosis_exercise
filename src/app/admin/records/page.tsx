@@ -165,16 +165,17 @@ export default function AdminRecordsPage() {
                   <th className="text-center p-3 font-medium">考核次数</th>
                   <th className="text-center p-3 font-medium">最高分</th>
                   <th className="text-center p-3 font-medium">最近结果</th>
+                  <th className="text-center p-3 font-medium">最近时间</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={6} className="text-center p-6 text-muted-foreground">加载中...</td>
+                    <td colSpan={7} className="text-center p-6 text-muted-foreground">加载中...</td>
                   </tr>
                 ) : !data || data.users.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center p-6 text-muted-foreground">暂无记录</td>
+                    <td colSpan={7} className="text-center p-6 text-muted-foreground">暂无记录</td>
                   </tr>
                 ) : (
                   data.users.map((user) => {
@@ -210,6 +211,9 @@ export default function AdminRecordsPage() {
                           >
                             {passed ? "合格" : "不合格"}
                           </span>
+                        </td>
+                        <td className="p-3 text-center text-muted-foreground">
+                          {formatDateTime(user.records[0]?.finishedAt)}
                         </td>
                       </tr>
                     );
