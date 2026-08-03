@@ -46,7 +46,7 @@ function toMarkdown(): string {
     "",
   ];
 
-  for (const [chapter, qs] of chapters) {
+  for (const [chapter, qs] of Array.from(chapters.entries())) {
     lines.push(`## ${chapter}（共 ${qs.length} 题）`, "");
     for (const q of qs) {
       lines.push(`### ${q.id}. [${TYPE_LABEL[q.type] ?? q.type}] ${q.stem}`, "");
@@ -68,10 +68,10 @@ function toMarkdown(): string {
 function toHtml(): string {
   const chapterHtml = () => {
     const parts: string[] = [];
-    for (const [chapter, qs] of chapters) {
+    for (const [chapter, qs] of Array.from(chapters.entries())) {
       const questionsHtml = qs
         .map(
-          (q) => `
+          (q: Question) => `
         <div class="question" data-chapter="${escapeHtml(chapter)}">
           <div class="q-header">
             <span class="q-id">#${q.id}</span>
@@ -81,7 +81,7 @@ function toHtml(): string {
           <div class="q-options">
             ${q.options
               .map(
-                (opt) =>
+                (opt: Option) =>
                   `<div class="opt ${q.answer.includes(opt.label) ? "correct" : ""}">
                 <span class="opt-label">${escapeHtml(opt.label)}</span>
                 <span class="opt-text">${escapeHtml(opt.text)}</span>
